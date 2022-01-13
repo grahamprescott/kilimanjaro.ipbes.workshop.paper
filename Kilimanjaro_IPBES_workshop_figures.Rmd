@@ -28,11 +28,11 @@ List of figures for the Supporting Information
 
 Figure S1 - Maps of 'areas assessed' by different stakeholder groups overlaid on a map of Mount Kilimanjaro. Created by Mark Snethlage in QGIS [check].
 
-Figure S2 - Recommended actions by stakeholder group and biome
+Figure S2 - Projected trends in habitat area and condition 
 
-Figure S3 - Projected trends in habitat area and condition [under construction]
+Figure S3 - Trends in different taxa 
 
-Figure S4 - Trends in different taxa [do we want this?]
+Figure S4 - Recommended actions by stakeholder group and biome
 
 
 Libraries:
@@ -614,7 +614,129 @@ Supporting Information
 
 Figure S1 - created by Mark A. Snethlage 
 
-Figure S2 recommended actions by group:
+Figure S2. Projections for changes in habitat area and condition over the next 10 years (2018-2028).
+
+```{r}
+habitat.questionnaire.original %>%
+  rename("Biome" = "Biome2") %>%
+  mutate(Habitat.area.will = str_replace_all(Habitat.area.will, c("Increase" = "Positive",
+                                                             "Decrease" = "Negative",
+                                                             "Mixed" = "NA",
+                                                             "No answer" = "NA",
+                                                             "Not change" = "Neutral"))) %>%
+  mutate(Habitat.condition.will = str_replace_all(Habitat.condition.will, c("Improve" = "Positive",
+                                                                            "Deteriorate" = "Negative",
+                                                                            "No answer" = "NA",
+                                                                            "Mixed" = "NA",
+                                                                            "Not change" = "Neutral"))) %>%
+  select(Biome, Habitat.area.will, Habitat.condition.will) %>%
+  pivot_longer(-Biome, names_to = "Variable", values_to = "Trend") %>%
+  subset(Trend != "NA") %>%
+  subset(Biome != "Urban") %>%
+  mutate(Variable = str_replace_all(Variable, "Habitat.condition.will", "Condition")) %>%
+  mutate(Variable = str_replace_all(Variable, "Habitat.area.will", "Area")) %>%
+  mutate(Biome = str_replace_all(Biome, "Agriculture", "Cropland")) %>%
+  mutate(Biome = fct_relevel(Biome,
+                             "Alpine", "Forest",
+                             "Agroforestry", "Cropland", "Urban",
+                             "Freshwater", "Grassland" )) %>%
+  mutate(Variable = fct_relevel(Variable,
+                                "Area", "Condition")) %>%
+    mutate(Trend = str_replace_all(Trend, c("Positive" = "+",
+                                          "Negative" = "-",
+                                          "Neutral" = "0"))) %>%
+    mutate(Trend = fct_relevel(Trend,
+                                "-", "0", "+")) %>%
+  
+  ggplot() +
+  geom_bar(aes(x = Trend), fill = "#A9A9A9", colour = "black", size = 0.2) +
+
+    theme_bw() +
+  labs(x = "", y = "") +
+  facet_grid(rows = vars(Biome), cols = vars(Variable)) +
+  theme(legend.position = "none") +
+  theme(legend.justification = "right") +
+  theme(strip.background = element_blank()) +
+  theme(strip.text.y.right = element_text(size = 8, vjust = 1, angle = 0)) +
+  theme(strip.text.x = element_text(vjust = 1, size = 8, angle = 0)) + 
+  theme(axis.text.y = element_text(size = 8, angle = 0)) +
+  theme(axis.text.x= element_text(size = 8, angle = 0)) + 
+  theme(axis.ticks.x=element_blank()) + 
+  theme(legend.title = element_blank()) + 
+  theme(legend.text = element_text(size = 8)) +
+  theme(panel.grid.major.x = element_blank()) + 
+  theme(panel.grid.minor.y = element_blank()) + 
+  scale_y_continuous(position = "left", breaks = c(10, 20)) 
+
+# to download high resolution version of figure:
+#ggsave(filename = "FigureS3.png", width = 120, height = 163, dpi = "print", units = "mm", device='png')
+```
+
+Function to convert blank cells to NA (for the 'Birds' variable) from Holger Brandl  https://stackoverflow.com/questions/24172111/change-the-blank-cells-to-na
+```{r}
+empty_as_na <- function(x){
+  if("factor" %in% class(x)) x <- as.character(x) 
+  ifelse(as.character(x)!="", x, NA)
+}
+```
+
+Figure S3. Reported trends in the diversity of various taxa / functional groups over the last 10 years (2008-2018). 
+
+```{r}
+habitat.questionnaire.original %>%
+  rename("Biome" = "Biome2") %>%
+  mutate(Birds = as.factor(empty_as_na(Birds))) %>%
+  mutate_if(is.numeric, ~1 * (. > 0)) %>%
+  select(Biome, Birds, Mammals, Trees, Reptiles.amphibians,
+            Fish,
+            Invertebrates,
+            Other.plants,
+            Fungi) %>%
+  pivot_longer(-Biome, names_to = "Variable", values_to = "Trend") %>%
+  #head()
+  mutate(Trend = str_replace_all(Trend, c("More" = "Positive",
+                                              "Less" = "Negative",
+                                              "No change" = "Neutral",
+                                              "No answer" = "NA"))) %>%
+  mutate(Variable = str_replace_all(Variable, c("Invertebrates" = "Inverts.",
+                                                "Reptiles.amphibians" = "Herps."))) %>%
+  subset(Trend != "NA") %>%
+  subset(Biome != "Urban") %>%
+  mutate(Variable = fct_relevel(Variable, "Trees", "Other.plants", "Fungi", "Inverts.", "Fish", "Herps.", "Birds", "Mammals")) %>%
+  mutate(Biome = str_replace_all(Biome, "Agriculture", "Cropland")) %>%
+  mutate(Biome = fct_relevel(Biome,
+                             "Alpine", "Forest",
+                             "Agroforestry", "Cropland", "Urban",
+                             "Freshwater", "Grassland" )) %>%
+    mutate(Trend = str_replace_all(Trend, c("Positive" = "+",
+                                          "Negative" = "-",
+                                          "Neutral" = "0"))) %>%
+    mutate(Trend = fct_relevel(Trend,
+                                "-", "0", "+")) %>%
+ggplot() +
+  geom_bar(aes(x = Trend), fill = "#A9A9A9", colour = "black", size = 0.2) +
+
+    theme_bw() +
+  labs(x = "", y = "") +
+  facet_grid(rows = vars(Biome), cols = vars(Variable)) +
+  theme(legend.position = "none") +
+  theme(legend.justification = "right") +
+  theme(strip.background = element_blank()) +
+  theme(strip.text.y.right = element_text(size = 8, vjust = 1, angle = 0)) +
+  theme(strip.text.x = element_text(vjust = 1, size = 8, angle = 0)) + 
+  theme(axis.text.y = element_text(size = 8, angle = 0)) +
+  theme(axis.text.x= element_text(size = 8, angle = 0)) + 
+  theme(axis.ticks.x=element_blank()) + 
+  theme(legend.title = element_blank()) + 
+  theme(legend.text = element_text(size = 8)) +
+  theme(panel.grid.major.x = element_blank()) + 
+  theme(panel.grid.minor.y = element_blank()) + 
+  scale_y_continuous(position = "left", breaks = c(10, 20)) 
+
+# to download high resolution version of figure:
+#ggsave(filename = "FigureS4.png", width = 180, height = 163, dpi = "print", units = "mm", device='png')
+```
+Figure S4 recommended actions by group:
 
 Direct drivers: ACT = ‘Human Activities’, CC = Climate Change, IAS = Invasive Alien Species, LUC = Land-Use Change, OVR = Overexploitation, POL = Pollution. Indirect drivers: CLT = Cultural, DEM = Demographic, ECO = Economic, GOV = Governance, S&T = Science and Technology. Recommended actions: AWR = Awareness Raising, ECO = Livelihood, Economic & Moral Incentives, EDU = Education & Training, ENF = Law Enforcement & Prosecution, INS = Institutional Development, LAN = Land / Water Management, LAW = Legal & Policy Frameworks, PRT = Conservation Designation & Planning, RSR = Research & Monitoring, SPC = Species Management
 
@@ -685,127 +807,4 @@ habitat.questionnaire.original%>%
 # to download high resolution version of figure:
 #ggsave(filename = "FigureS2.png", width = 180, height = 180, dpi = "print", units = "mm", device='png')
 
-```
-
-Figure S3. Projections for changes in habitat area and condition over the next 10 years (2018-2028).
-
-```{r}
-habitat.questionnaire.original %>%
-  rename("Biome" = "Biome2") %>%
-  mutate(Habitat.area.will = str_replace_all(Habitat.area.will, c("Increase" = "Positive",
-                                                             "Decrease" = "Negative",
-                                                             "Mixed" = "NA",
-                                                             "No answer" = "NA",
-                                                             "Not change" = "Neutral"))) %>%
-  mutate(Habitat.condition.will = str_replace_all(Habitat.condition.will, c("Improve" = "Positive",
-                                                                            "Deteriorate" = "Negative",
-                                                                            "No answer" = "NA",
-                                                                            "Mixed" = "NA",
-                                                                            "Not change" = "Neutral"))) %>%
-  select(Biome, Habitat.area.will, Habitat.condition.will) %>%
-  pivot_longer(-Biome, names_to = "Variable", values_to = "Trend") %>%
-  subset(Trend != "NA") %>%
-  subset(Biome != "Urban") %>%
-  mutate(Variable = str_replace_all(Variable, "Habitat.condition.will", "Condition")) %>%
-  mutate(Variable = str_replace_all(Variable, "Habitat.area.will", "Area")) %>%
-  mutate(Biome = str_replace_all(Biome, "Agriculture", "Cropland")) %>%
-  mutate(Biome = fct_relevel(Biome,
-                             "Alpine", "Forest",
-                             "Agroforestry", "Cropland", "Urban",
-                             "Freshwater", "Grassland" )) %>%
-  mutate(Variable = fct_relevel(Variable,
-                                "Area", "Condition")) %>%
-    mutate(Trend = str_replace_all(Trend, c("Positive" = "+",
-                                          "Negative" = "-",
-                                          "Neutral" = "0"))) %>%
-    mutate(Trend = fct_relevel(Trend,
-                                "-", "0", "+")) %>%
-  
-  ggplot() +
-  geom_bar(aes(x = Trend), fill = "#A9A9A9", colour = "black", size = 0.2) +
-
-    theme_bw() +
-  labs(x = "", y = "") +
-  facet_grid(rows = vars(Biome), cols = vars(Variable)) +
-  theme(legend.position = "none") +
-  theme(legend.justification = "right") +
-  theme(strip.background = element_blank()) +
-  theme(strip.text.y.right = element_text(size = 8, vjust = 1, angle = 0)) +
-  theme(strip.text.x = element_text(vjust = 1, size = 8, angle = 0)) + 
-  theme(axis.text.y = element_text(size = 8, angle = 0)) +
-  theme(axis.text.x= element_text(size = 8, angle = 0)) + 
-  theme(axis.ticks.x=element_blank()) + 
-  theme(legend.title = element_blank()) + 
-  theme(legend.text = element_text(size = 8)) +
-  theme(panel.grid.major.x = element_blank()) + 
-  theme(panel.grid.minor.y = element_blank()) + 
-  scale_y_continuous(position = "left", breaks = c(10, 20)) 
-
-# to download high resolution version of figure:
-#ggsave(filename = "FigureS3.png", width = 120, height = 163, dpi = "print", units = "mm", device='png')
-```
-
-Function to convert blank cells to NA (for the 'Birds' variable) from Holger Brandl  https://stackoverflow.com/questions/24172111/change-the-blank-cells-to-na
-```{r}
-empty_as_na <- function(x){
-  if("factor" %in% class(x)) x <- as.character(x) 
-  ifelse(as.character(x)!="", x, NA)
-}
-```
-
-Figure S4. Reported trends in the diversity of various taxa / functional groups over the last 10 years (2008-2018). 
-
-```{r}
-habitat.questionnaire.original %>%
-  rename("Biome" = "Biome2") %>%
-  mutate(Birds = as.factor(empty_as_na(Birds))) %>%
-  mutate_if(is.numeric, ~1 * (. > 0)) %>%
-  select(Biome, Birds, Mammals, Trees, Reptiles.amphibians,
-            Fish,
-            Invertebrates,
-            Other.plants,
-            Fungi) %>%
-  pivot_longer(-Biome, names_to = "Variable", values_to = "Trend") %>%
-  #head()
-  mutate(Trend = str_replace_all(Trend, c("More" = "Positive",
-                                              "Less" = "Negative",
-                                              "No change" = "Neutral",
-                                              "No answer" = "NA"))) %>%
-  mutate(Variable = str_replace_all(Variable, c("Invertebrates" = "Inverts.",
-                                                "Reptiles.amphibians" = "Herps."))) %>%
-  subset(Trend != "NA") %>%
-  subset(Biome != "Urban") %>%
-  mutate(Variable = fct_relevel(Variable, "Trees", "Other.plants", "Fungi", "Inverts.", "Fish", "Herps.", "Birds", "Mammals")) %>%
-  mutate(Biome = str_replace_all(Biome, "Agriculture", "Cropland")) %>%
-  mutate(Biome = fct_relevel(Biome,
-                             "Alpine", "Forest",
-                             "Agroforestry", "Cropland", "Urban",
-                             "Freshwater", "Grassland" )) %>%
-    mutate(Trend = str_replace_all(Trend, c("Positive" = "+",
-                                          "Negative" = "-",
-                                          "Neutral" = "0"))) %>%
-    mutate(Trend = fct_relevel(Trend,
-                                "-", "0", "+")) %>%
-ggplot() +
-  geom_bar(aes(x = Trend), fill = "#A9A9A9", colour = "black", size = 0.2) +
-
-    theme_bw() +
-  labs(x = "", y = "") +
-  facet_grid(rows = vars(Biome), cols = vars(Variable)) +
-  theme(legend.position = "none") +
-  theme(legend.justification = "right") +
-  theme(strip.background = element_blank()) +
-  theme(strip.text.y.right = element_text(size = 8, vjust = 1, angle = 0)) +
-  theme(strip.text.x = element_text(vjust = 1, size = 8, angle = 0)) + 
-  theme(axis.text.y = element_text(size = 8, angle = 0)) +
-  theme(axis.text.x= element_text(size = 8, angle = 0)) + 
-  theme(axis.ticks.x=element_blank()) + 
-  theme(legend.title = element_blank()) + 
-  theme(legend.text = element_text(size = 8)) +
-  theme(panel.grid.major.x = element_blank()) + 
-  theme(panel.grid.minor.y = element_blank()) + 
-  scale_y_continuous(position = "left", breaks = c(10, 20)) 
-
-# to download high resolution version of figure:
-#ggsave(filename = "FigureS4.png", width = 180, height = 163, dpi = "print", units = "mm", device='png')
 ```
