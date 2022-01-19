@@ -1,9 +1,9 @@
 ---
 title: "Figures for Kilimanjaro IPBES Workshop Paper"
 output:
-  pdf_document: default
-  word_document: default
   html_document: default
+  word_document: default
+  pdf_document: default
 ---
 
 R code for creating the figures for: Masao CA, Prescott GW, Snethlage MA, Urbach D, Torre-Marin Rando A, Molina-Venegas R, Mollel NP, Hemp C, Hemp A, Fischer M (2022). Stakeholder Perspectives on Nature, People, and Sustainability at Mount Kilimanjaro. People and Nature.
